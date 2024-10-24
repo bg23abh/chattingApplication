@@ -1,29 +1,33 @@
 package chatting_application;
 
+import static chatting_application.Server.formatLabel;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Calendar;
 import java.text.*;
+import java.net.*;
+import java.io.*;
 
 /**
  *
  * @author User
  */
-public class Client extends JFrame implements ActionListener {
+public class Client implements ActionListener {
 
     JTextField text;
-    JPanel a1;
-    Box vertical = Box.createVerticalBox();
-
+    static JPanel a1;
+    static Box vertical = Box.createVerticalBox();
+    static DataOutputStream douput;
+    static JFrame jf = new JFrame();
     Client() {
-        setLayout(null);
+        jf.setLayout(null);
         JPanel p1 = new JPanel();
         p1.setBackground(new Color(7, 94, 82));
         p1.setBounds(0, 0, 450, 70);
         p1.setLayout(null);
-        add(p1);
+        jf.add(p1);
 
         ImageIcon i1 = new ImageIcon(ClassLoader.getSystemResource("Icons/3.png"));
         Image i2 = i1.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT);
@@ -82,12 +86,12 @@ public class Client extends JFrame implements ActionListener {
 
         a1 = new JPanel();
         a1.setBounds(5, 75, 440, 570);
-        add(a1);
+        jf.add(a1);
 
         text = new JTextField();
         text.setBounds(5, 655, 310, 40);
         text.setFont(new Font("SAN_SERIF", Font.PLAIN, 12));
-        add(text);
+        jf.add(text);
 
         JButton send = new JButton("Send");
         send.setBounds(320, 655, 123, 40);
@@ -95,31 +99,37 @@ public class Client extends JFrame implements ActionListener {
         send.setForeground(Color.WHITE);
         send.addActionListener(this);
         text.setFont(new Font("SAN_SERIF", Font.BOLD, 14));
-        add(send);
+        jf.add(send);
 
-        setSize(450, 700);
-        setLocation(800, 50);
-        setUndecorated(true);
-        getContentPane().setBackground(Color.WHITE);
+        jf.setSize(450, 700);
+        jf.setLocation(800, 50);
+        jf.setUndecorated(true);
+        jf.getContentPane().setBackground(Color.WHITE);
 
-        setVisible(true);
+        jf.setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent ae) {
-        String out = text.getText();
-        JPanel output = formatLable(out);
+        try{
+            String out = text.getText();
+            JPanel output = formatLable(out);
 
-        a1.setLayout(new BorderLayout());
-        JPanel right = new JPanel(new BorderLayout());
-        right.add(output, BorderLayout.LINE_END);
-        vertical.add(right);
-        vertical.add(Box.createVerticalStrut(15));
-        a1.add(vertical, BorderLayout.PAGE_START);
-        text.setText("");
-        repaint();
-        invalidate();
-        validate();
+            a1.setLayout(new BorderLayout());
+            JPanel right = new JPanel(new BorderLayout());
+            right.add(output, BorderLayout.LINE_END);
+            vertical.add(right);
+            vertical.add(Box.createVerticalStrut(15));
+            a1.add(vertical, BorderLayout.PAGE_START);
+            douput.writeUTF(out);
+
+            text.setText("");
+            jf.repaint();
+            jf.invalidate();
+            jf.validate();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
 
     }
 
@@ -147,5 +157,27 @@ public class Client extends JFrame implements ActionListener {
     
     public static void main(String[] args) {
         new Client();
+        try{
+            Socket s = new Socket("127.0.0.1", 6001);
+            DataInputStream dinput = new DataInputStream(s.getInputStream());
+            douput = new DataOutputStream(s.getOutputStream());
+            
+            while (true) {
+                a1.setLayout(new BorderLayout());
+                String msg = dinput.readUTF();
+                JPanel panel = formatLabel(msg);
+                JPanel left = new JPanel(new BorderLayout());
+                left.add(panel, BorderLayout.LINE_START);
+                vertical.add(left);
+                vertical.add(Box.createVerticalStrut(15));
+                a1.add(vertical, BorderLayout.PAGE_START);
+                
+                jf.validate();
+
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

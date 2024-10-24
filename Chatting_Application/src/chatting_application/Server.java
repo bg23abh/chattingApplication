@@ -5,21 +5,25 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Calendar;
 import java.text.*;
+import java.net.*;
+import java.io.*;
 /**
  *
  * @author User
  */
-public class Server extends JFrame implements ActionListener {
+public class Server implements ActionListener {
     JTextField text;
     JPanel a1;
-    Box vertical = Box.createVerticalBox();
+    static Box vertical = Box.createVerticalBox();
+    static JFrame jf = new JFrame();
+    static DataOutputStream douput;
     Server(){
-        setLayout(null);
+        jf.setLayout(null);
         JPanel p1 = new JPanel();
         p1.setBackground(new Color(7, 94, 82));
         p1.setBounds(0,0,450, 70);
         p1.setLayout(null);
-        add(p1);
+        jf.add(p1);
         
         ImageIcon i1 = new ImageIcon(ClassLoader.getSystemResource("Icons/3.png"));
         Image i2 = i1.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT);
@@ -77,12 +81,12 @@ public class Server extends JFrame implements ActionListener {
         
         a1 = new JPanel();
         a1.setBounds(5, 75, 440, 570);
-        add(a1);
+        jf.add(a1);
         
         text = new JTextField();
         text.setBounds(5, 655, 310, 40);
         text.setFont(new Font("SAN_SERIF", Font.PLAIN, 12));
-        add(text);
+        jf.add(text);
         
         JButton send =  new JButton("Send");
         send.setBounds(320, 655, 123, 40);
@@ -90,22 +94,23 @@ public class Server extends JFrame implements ActionListener {
         send.setForeground(Color.WHITE);
         send.addActionListener(this);
         text.setFont(new Font("SAN_SERIF", Font.BOLD, 14));
-        add(send);
+        jf.add(send);
         
         
         
-        setSize(450, 700);
-        setLocation(200, 50);
-        setUndecorated(true);
-        getContentPane().setBackground(Color.WHITE);
+        jf.setSize(450, 700);
+        jf.setLocation(200, 50);
+        jf.setUndecorated(true);
+        jf.getContentPane().setBackground(Color.WHITE);
         
-        setVisible(true);
+        jf.setVisible(true);
     }
     
     @Override
     public void actionPerformed (ActionEvent ae){
+        try{
         String out = text.getText();
-        JPanel output = formatLable(out);
+        JPanel output = formatLabel(out);
         
         a1.setLayout(new BorderLayout());
         JPanel right = new JPanel(new BorderLayout());
@@ -113,14 +118,21 @@ public class Server extends JFrame implements ActionListener {
         vertical.add(right);
         vertical.add(Box.createVerticalStrut(15));
         a1.add(vertical, BorderLayout.PAGE_START);
+        
+        douput.writeUTF(out);
+        
         text.setText("");
-        repaint();
-        invalidate();
-        validate();
+        
+        jf.repaint();
+        jf.invalidate();
+        jf.validate();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         
     }
     
-    public static JPanel formatLable(String out){
+    public static JPanel formatLabel(String out){
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JLabel output = new JLabel("<html><p style = \"width: 150px\">"+out+"</p> </html>");
@@ -142,5 +154,26 @@ public class Server extends JFrame implements ActionListener {
     
     public static void main(String[] args){
         new Server();
+        try{
+            ServerSocket skt = new ServerSocket(6001);
+            while(true){
+                Socket s = skt.accept();
+                DataInputStream dinput = new DataInputStream(s.getInputStream());
+                douput = new DataOutputStream(s.getOutputStream());
+                
+                while(true){
+                    String msg = dinput.readUTF();
+                    JPanel panel = formatLabel(msg);
+                    JPanel left = new JPanel(new BorderLayout());
+                    left.add(panel,BorderLayout.LINE_START);
+                    vertical.add(left);
+                    jf.validate();
+                    
+                }
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }
